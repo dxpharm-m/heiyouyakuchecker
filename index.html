@@ -367,7 +367,7 @@ function resizeImage(file, maxPx) {
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
+        resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
       };
       img.src = e.target.result;
     };
@@ -445,8 +445,8 @@ async function analyze() {
   statusArea.innerHTML = '<div class="status"><div class="spinner"></div>画像を解析中...</div>';
 
   try {
-    const yakuBase64 = await resizeImage(yakurekyFile, 1000);
-    const techoBase64List = await Promise.all(techoFiles.map(f => resizeImage(f, 1000)));
+    const yakuBase64 = await resizeImage(yakurekyFile, 800);
+    const techoBase64List = await Promise.all(techoFiles.map(f => resizeImage(f, 800)));
 
     const imageContents = [
       { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: yakuBase64 } },
