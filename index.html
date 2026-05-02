@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>併用薬比較</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f1f0ec;
+      --border: rgba(0,0,0,0.1);
+      --border2: rgba(0,0,0,0.18);
+      --text: #1a1a1a;
+      --text2: #6b6b6b;
+      --text3: #9e9e9e;
+      --info-bg: #e6f1fb;
+      --info-text: #185fa5;
+      --add-bg: #eaf3de;
+      --add-text: #3b6d11;
+      --del-bg: #fcebeb;
+      --del-text: #a32d2d;
+      --dose-bg: #faeeda;
+      --dose-text: #854f0b;
+      --maker-bg: #e6f1fb;
+      --maker-text: #185fa5;
+      --cont-bg: #f1f0ec;
+      --cont-text: #6b6b6b;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18;
+        --surface: #242422;
+        --surface2: #2e2e2b;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.18);
+        --text: #f0efe9;
+        --text2: #a0a09a;
+        --text3: #6b6b66;
+        --info-bg: #0c3358;
+        --info-text: #85b7eb;
+        --add-bg: #173404;
+        --add-text: #97c459;
+        --del-bg: #2d1010;
+        --del-text: #f09595;
+        --dose-bg: #2a1a04;
+        --dose-text: #ef9f27;
+        --maker-bg: #0c3358;
+        --maker-text: #85b7eb;
+        --cont-bg: #2e2e2b;
+        --cont-text: #6b6b66;
+      }
+    }
+
+    body {
+      font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 20px 0 16px;
+      border-bottom: 0.5px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+    .header p { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .upload-section { margin-bottom: 14px; }
+
+    .upload-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+
+    .upload-row { display: flex; align-items: center; gap: 10px; }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .upload-btn:active { opacity: 0.6; }
+
+    .upload-hint { font-size: 12px; color: var(--text3); }
+
+    .thumb-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .thumb {
+      position: relative;
+      width: 60px; height: 60px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 0.5px solid var(--border);
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb-del {
+      position: absolute; top: 2px; right: 2px;
+      width: 18px; height: 18px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 50%;
+      border: none;
+      color: #fff;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .add-more {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px;
+      background: none;
+      border: 0.5px dashed var(--border2);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text2);
+      cursor: pointer;
+    }
+
+    .analyze-btn {
+      width: 100%;
+      padding: 15px;
+      margin-top: 16px;
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: color 0.2s, border-color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .analyze-btn.ready {
+      color: var(--info-text);
+      border-color: var(--info-text);
+    }
+    .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .status {
+      text-align: center;
+      padding: 16px 0;
+      font-size: 13px;
+      color: var(--text2);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--text2);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hospital-group {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .hospital-header {
+      padding: 10px 14px;
+      background: var(--surface2);
+      border-bottom: 0.5px solid var(--border);
+    }
+    .hospital-name { font-size: 14px; font-weight: 600; }
+
+    .drug-row {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .drug-row:last-child { border-bottom: none; }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .badge-add  { background: var(--add-bg);  color: var(--add-text); }
+    .badge-del  { background: var(--del-bg);  color: var(--del-text); }
+    .badge-dose { background: var(--dose-bg); color: var(--dose-text); }
+    .badge-maker{ background: var(--maker-bg);color: var(--maker-text);}
+    .badge-cont { background: var(--cont-bg); color: var(--cont-text); }
+
+    .drug-info { flex: 1; min-width: 0; }
+    .drug-name { font-size: 13px; font-weight: 500; }
+    .drug-detail { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .drug-detail s { color: var(--text3); }
+
+    .print-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 13px;
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .print-btn:active { opacity: 0.7; }
+
+    .error-msg {
+      background: var(--del-bg);
+      border: 0.5px solid var(--del-text);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--del-text);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .privacy-note {
+      font-size: 11px;
+      color: var(--text3);
+      text-align: center;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    .results { margin-top: 16px; }
+
+    @media print {
+      body { background: #fff; }
+      .upload-section, .analyze-btn, .print-btn, .privacy-note { display: none !important; }
+      .app { max-width: 100%; padding: 0; }
+      .header { padding: 12px 0 8px; }
+      .hospital-group { break-inside: avoid; border: 1px solid #ccc; margin-bottom: 8px; }
+      .badge-add  { background: #eaf3de !important; color: #3b6d11 !important; -webkit-print-color-adjust: exact; }
+      .badge-del  { background: #fcebeb !important; color: #a32d2d !important; -webkit-print-color-adjust: exact; }
+      .badge-dose { background: #faeeda !important; color: #854f0b !important; -webkit-print-color-adjust: exact; }
+      .badge-maker{ background: #e6f1fb !important; color: #185fa5 !important; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>併用薬比較</h1>
+    <p>写真を2種アップロードするだけで自動比較</p>
+  </div>
+
+  <div class="upload-section">
+    <span class="section-label">薬歴画面（1枚）</span>
+    <div class="upload-card">
+      <div class="upload-row">
+        <label class="upload-btn" for="yakureki-input">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v9M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          写真を選ぶ
+        </label>
+        <span class="upload-hint" id="yakureki-hint">未選択</span>
+      </div>
+      <input type="file" id="yakureki-input" accept="image/*" style="display:none">
+      <div class="thumb-list" id="yakureki-thumbs"></div>
+    </div>
+  </div>
+
+  <div class="upload-section">
+    <span class="section-label">お薬手帳（複数枚可）</span>
+    <div class="upload-card">
+      <div class="upload-row">
+        <label class="upload-btn" for="techo-input">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v9M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          写真を選ぶ
+        </label>
+        <span class="upload-hint" id="techo-hint">未選択</span>
+      </div>
+      <input type="file" id="techo-input" accept="image/*" style="display:none">
+      <div class="thumb-list" id="techo-thumbs"></div>
+      <button class="add-more" id="add-more-btn" style="display:none">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        ページを追加
+      </button>
+    </div>
+  </div>
+
+  <button class="analyze-btn" id="analyze-btn" disabled>
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+      <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M11 11l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    比較する
+  </button>
+
+  <div id="status-area"></div>
+  <div id="results-area"></div>
+
+  <p class="privacy-note">写真は解析後すぐに破棄されます。<br>個人情報はサーバーに保存されません。</p>
+</div>
+
+<script>
+let yakurekyFile = null;
+let techoFiles = [];
+
+const yakurekyInput = document.getElementById('yakureki-input');
+const techoInput = document.getElementById('techo-input');
+const analyzeBtn = document.getElementById('analyze-btn');
+const statusArea = document.getElementById('status-area');
+const resultsArea = document.getElementById('results-area');
+const addMoreBtn = document.getElementById('add-more-btn');
+
+function resizeImage(file, maxPx) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function addThumb(container, file, onDelete) {
+  const div = document.createElement('div');
+  div.className = 'thumb';
+  const img = document.createElement('img');
+  const url = URL.createObjectURL(file);
+  img.src = url;
+  const btn = document.createElement('button');
+  btn.className = 'thumb-del';
+  btn.textContent = '×';
+  btn.onclick = () => { URL.revokeObjectURL(url); onDelete(div); };
+  div.appendChild(img); div.appendChild(btn);
+  container.appendChild(div);
+}
+
+yakurekyInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  yakurekyFile = file;
+  document.getElementById('yakureki-hint').textContent = '1枚選択済み';
+  const thumbs = document.getElementById('yakureki-thumbs');
+  thumbs.innerHTML = '';
+  addThumb(thumbs, file, () => {
+    yakurekyFile = null;
+    thumbs.innerHTML = '';
+    document.getElementById('yakureki-hint').textContent = '未選択';
+    updateBtn();
+  });
+  updateBtn();
+});
+
+techoInput.addEventListener('change', e => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const thumbs = document.getElementById('techo-thumbs');
+  files.forEach(file => {
+    techoFiles.push(file);
+    addThumb(thumbs, file, div => {
+      const idx = Array.from(thumbs.children).indexOf(div);
+      techoFiles.splice(idx, 1);
+      div.remove();
+      updateHintAndBtn();
+    });
+  });
+  updateHintAndBtn();
+  techoInput.value = '';
+});
+
+addMoreBtn.addEventListener('click', () => techoInput.click());
+
+function updateHintAndBtn() {
+  const n = techoFiles.length;
+  document.getElementById('techo-hint').textContent = n ? `${n}枚選択済み` : '未選択';
+  addMoreBtn.style.display = n ? 'flex' : 'none';
+  updateBtn();
+}
+
+function updateBtn() {
+  const ready = yakurekyFile && techoFiles.length > 0;
+  analyzeBtn.disabled = !ready;
+  analyzeBtn.className = 'analyze-btn' + (ready ? ' ready' : '');
+}
+
+analyzeBtn.addEventListener('click', analyze);
+
+async function analyze() {
+  analyzeBtn.disabled = true;
+  resultsArea.innerHTML = '';
+  statusArea.innerHTML = '<div class="status"><div class="spinner"></div>画像を解析中...</div>';
+
+  try {
+    const yakuBase64 = await resizeImage(yakurekyFile, 1000);
+    const techoBase64List = await Promise.all(techoFiles.map(f => resizeImage(f, 1000)));
+
+    const imageContents = [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: yakuBase64 } },
+      { type: 'text', text: '上の画像は【薬歴画面（既存）】です。以下の画像はすべて【お薬手帳】のページです。' },
+      ...techoBase64List.map(b64 => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }))
+    ];
+
+    const prompt = `あなたは薬剤師業務支援AIです。
+提供された画像から薬品情報のみを厳密に抽出し、比較してください。
+
+【抽出ルール】
+- 抽出する情報：医療機関名、薬品名（一般名または商品名）、規格（mg/μg/mL等の数字と単位）、メーカー名のみ
+- 患者氏名・生年月日・住所・保険番号・処方日・薬剤師名・調剤薬局名・コメント・金額・バーコード等は一切無視
+- メーカー名の表記ゆれは正規化（例：「沢井」「沢井製薬」→「サワイ」）
+- 薬品名の剤形（錠・カプセル・OD錠等）は除外し、薬品名と規格のみ残す
+
+【比較ルール】
+- 薬歴画面（既存）とお薬手帳を医療機関ごとに比較
+- 各薬品を以下5種に分類：
+  - added: お薬手帳に新規追加
+  - removed: 薬歴にあるがお薬手帳にない
+  - dose_changed: 薬品名同一・規格が変更
+  - maker_changed: 薬品名・規格同一・メーカーのみ変更
+  - continued: 変更なし
+
+【出力形式】JSON only（前後の説明文・マークダウン記号不要）
+{"hospitals":[{"name":"医療機関名","drugs":[{"status":"added|removed|dose_changed|maker_changed|continued","name":"薬品名","spec":"規格","maker":"メーカー名","prev_spec":"変更前規格(dose_changedのみ)","prev_maker":"変更前メーカー(maker_changedのみ)"}]}]}`;
+
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageContents, prompt })
+    });
+
+    yakurekyFile = null;
+    techoFiles = [];
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `サーバーエラー (${res.status})`);
+    }
+
+    const data = await res.json();
+    statusArea.innerHTML = '';
+    renderResults(data);
+
+  } catch (err) {
+    statusArea.innerHTML = '';
+    resultsArea.innerHTML = `<div class="error-msg">エラーが発生しました。写真を確認して再度お試しください。<br><small style="opacity:0.7">${err.message}</small></div>`;
+    analyzeBtn.disabled = false;
+    updateBtn();
+  }
+}
+
+function renderResults(data) {
+  const statusMap = {
+    added:         { label: '追加',     cls: 'badge-add' },
+    removed:       { label: '削除',     cls: 'badge-del' },
+    dose_changed:  { label: '用量変更', cls: 'badge-dose' },
+    maker_changed: { label: '変更',     cls: 'badge-maker' },
+    continued:     { label: '継続',     cls: 'badge-cont' }
+  };
+  const order = ['added','removed','dose_changed','maker_changed','continued'];
+
+  const now = new Date().toLocaleString('ja-JP');
+  let html = `<div class="results"><p style="font-size:11px;color:var(--text3);margin-bottom:10px;">比較日時：${now}</p>`;
+
+  for (const hospital of data.hospitals) {
+    const sorted = [...hospital.drugs].sort((a,b) => order.indexOf(a.status) - order.indexOf(b.status));
+    html += `<div class="hospital-group"><div class="hospital-header"><span class="hospital-name">${hospital.name}</span></div>`;
+    for (const d of sorted) {
+      const s = statusMap[d.status] || { label: d.status, cls: 'badge-cont' };
+      let detail = `${d.spec || ''}　${d.maker || ''}`;
+      if (d.status === 'dose_changed') detail = `<s>${d.prev_spec}</s> → ${d.spec}　${d.maker || ''}`;
+      if (d.status === 'maker_changed') detail = `${d.spec}　<s>${d.prev_maker}</s> → ${d.maker}`;
+      html += `<div class="drug-row">
+        <span class="badge ${s.cls}">${s.label}</span>
+        <div class="drug-info">
+          <div class="drug-name">${d.name}</div>
+          <div class="drug-detail">${detail}</div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  html += `</div><button class="print-btn" onclick="window.print()">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+      <rect x="3" y="1" width="10" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M3 7H1v7h14V7h-2" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <rect x="4" y="10" width="8" height="1" rx="0.5" fill="currentColor"/>
+      <rect x="4" y="12" width="5" height="1" rx="0.5" fill="currentColor"/>
+    </svg>
+    PDFで印刷・保存
+  </button>`;
+
+  resultsArea.innerHTML = html;
+  analyzeBtn.disabled = false;
+  updateBtn();
+}
+</script>
+</body>
+</html>
